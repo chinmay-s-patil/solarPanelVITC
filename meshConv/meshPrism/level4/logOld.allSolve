@@ -1,0 +1,6 @@
+>>> Processing level4...
+level4: mesh exists
+level4: decomposePar done
+level4: simpleFoam done
+level4: reconstructPar done
+level4: solver completed successfully

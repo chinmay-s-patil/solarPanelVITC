@@ -1,0 +1,51 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+
+LEVEL_NAME=$(basename "$PWD")
+LOGFILE="log.allRun"
+
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] ${LEVEL_NAME}: starting solver..." > "$LOGFILE"
+
+log_msg() {
+    local msg="$1"
+    echo "${msg}" | tee -a "$LOGFILE"
+}
+
+if [ ! -d "constant/polyMesh" ] || [ ! -f "constant/polyMesh/points" ]; then
+    log_msg "ERROR: No mesh found for ${LEVEL_NAME}. Run ./Allmesh first."
+    exit 1
+fi
+
+rm -f 0/cellLevel 0/pointLevel
+
+# Step 1: decomposePar
+if [ -f "system/decomposeParDict" ]; then
+    sed -i 's/numberOfSubdomains.*/numberOfSubdomains  8;/' system/decomposeParDict
+fi
+decomposePar -force > log.decomposePar 2>&1
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: decomposePar done"
+else
+    log_msg "${LEVEL_NAME}: decomposePar FAILED"
+    exit 1
+fi
+
+# Step 2: simpleFoam
+mpirun -np 8 simpleFoam -parallel > log.simpleFoam 2>&1
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: simpleFoam done"
+else
+    log_msg "${LEVEL_NAME}: simpleFoam FAILED"
+    exit 1
+fi
+
+# Step 3: reconstructPar
+reconstructPar -latestTime > log.reconstructPar 2>&1
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: reconstructPar done"
+else
+    log_msg "${LEVEL_NAME}: reconstructPar FAILED"
+    exit 1
+fi
+
+log_msg "${LEVEL_NAME}: solver completed successfully"

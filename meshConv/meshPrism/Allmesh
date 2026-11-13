@@ -1,0 +1,67 @@
+#!/bin/bash
+#----------------------------------*-sh-*--------------------------------------
+# =========                 |                                                 |
+# \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+#  \    /   O peration     | Version:  v2412                                 |
+#   \  /    A nd           | Website:  www.openfoam.com                      |
+#    \/     M anipulation  |                                                 |
+#------------------------------------------------------------------------------
+
+cd "${0%/*}" || exit 1
+
+TARGET_LEVELS=()
+PASSTHROUGH_ARGS=()
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -level|-levels|--level|--levels)
+            shift
+            while [ $# -gt 0 ] && [[ "$1" != -* ]]; do
+                arg="$1"
+                if [[ "$arg" =~ ^[lL][eE][vV][eE][lL] ]]; then
+                    TARGET_LEVELS+=("$arg")
+                else
+                    TARGET_LEVELS+=("level${arg}")
+                fi
+                shift
+            done
+            ;;
+        *)
+            PASSTHROUGH_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [ ${#TARGET_LEVELS[@]} -eq 0 ]; then
+    ALL_LEVELS=(level0 level1 level2 level3 level3.5 level4 level4.5 level5 level6)
+else
+    ALL_LEVELS=("${TARGET_LEVELS[@]}")
+fi
+
+# Rotate old log.allMesh if present
+if [ -f "log.allMesh" ]; then
+    mv "log.allMesh" "logOld.allMesh"
+fi
+
+export TOP_LOGFILE="$(pwd)/log.allMesh"
+
+echo "======================================================================" > "$TOP_LOGFILE"
+echo "  Parallel Mesh Generation for Levels: ${ALL_LEVELS[*]}" >> "$TOP_LOGFILE"
+echo "======================================================================" >> "$TOP_LOGFILE"
+
+for lvl in "${ALL_LEVELS[@]}"; do
+    if [ -d "$lvl" ]; then
+        (
+            cd "$lvl" || exit 1
+            if [ -f "./Allmesh" ]; then
+                ./Allmesh "${PASSTHROUGH_ARGS[@]}"
+            fi
+        )
+    fi
+done
+
+echo "" >> "$TOP_LOGFILE"
+echo "======================================================================" >> "$TOP_LOGFILE"
+echo "  Selected Mesh Convergence Levels Processed!" >> "$TOP_LOGFILE"
+echo "======================================================================" >> "$TOP_LOGFILE"

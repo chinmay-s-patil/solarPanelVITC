@@ -1,0 +1,21 @@
+/*--------------------------------*- C++ -*----------------------------------*  =========                 |
+  \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \    /   O peration     | Version:  v2412
+    \  /    A nd           | Website:  www.openfoam.com
+     \/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+
+type            probes;
+libs            ("libsampling.so");
+writeControl    writeTime;
+
+fields          (p U);
+probeLocations
+(
+    (0.50 0.55 0.0)    // Point 1: Upstream Leading Edge / Stagnation
+    (0.00 0.80 0.0)    // Point 2: Top Suction / Upper Boundary Layer
+    (-0.80 0.70 0.0)   // Point 3: Downstream Wake / Separation Region
+    (0.20 0.45 0.0)    // Point 4: Under-Panel / Lower Inflow Region
+);
+
+// ************************************************************************* //

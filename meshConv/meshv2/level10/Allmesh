@@ -1,0 +1,118 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+
+LEVEL_NAME=$(basename "$PWD")
+
+# Rotate log.allMesh if present
+if [ -f "log.allMesh" ]; then
+    mv "log.allMesh" "logOld.allMesh"
+fi
+
+LOGFILE="log.allMesh"
+
+# Parse flags
+OVERWRITE=false
+PRINT_MODE=false
+
+for arg in "$@"; do
+    case "$arg" in
+        -overwrite|--overwrite)
+            OVERWRITE=true
+            ;;
+        -print|--print)
+            PRINT_MODE=true
+            ;;
+    esac
+done
+
+log_msg() {
+    local msg="$1"
+    echo "${msg}" >> "$LOGFILE"
+    if [ "$PRINT_MODE" = true ]; then
+        echo "${msg}"
+    fi
+    if [ -n "$TOP_LOGFILE" ] && [ -f "$TOP_LOGFILE" ]; then
+        echo "${msg}" >> "$TOP_LOGFILE"
+    fi
+}
+
+echo ">>> Processing ${LEVEL_NAME}..." > "$LOGFILE"
+if [ -n "$TOP_LOGFILE" ] && [ -f "$TOP_LOGFILE" ]; then
+    echo "" >> "$TOP_LOGFILE"
+    echo ">>> Processing ${LEVEL_NAME}..." >> "$TOP_LOGFILE"
+fi
+
+run_cmd() {
+    local cmd="$1"
+    local logfile="$2"
+    if [ "$PRINT_MODE" = true ]; then
+        eval "$cmd" 2>&1 | tee "$logfile"
+    else
+        eval "$cmd" > "$logfile" 2>&1
+    fi
+    return ${PIPESTATUS[0]}
+}
+
+# Check existing mesh
+if [ "$OVERWRITE" = false ] && [ -d "constant/polyMesh" ] && [ -f "constant/polyMesh/points" ] && [ -s "constant/polyMesh/points" ]; then
+    NCELLS=$(grep -oP 'cells:\s*\K[0-9]+' log.checkMesh 2>/dev/null | head -1)
+    if [ -n "$NCELLS" ]; then
+        log_msg "${LEVEL_NAME}: mesh already exists (${NCELLS} cells). Skipping."
+    else
+        log_msg "${LEVEL_NAME}: mesh already exists. Skipping."
+    fi
+    exit 0
+fi
+
+# Step 1: blockMesh
+run_cmd "blockMesh" "log.blockMesh"
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: blockMesh done"
+else
+    log_msg "${LEVEL_NAME}: blockMesh FAILED"
+    exit 1
+fi
+
+# Step 2: decomposePar
+if [ -f "system/decomposeParDict" ]; then
+    sed -i 's/numberOfSubdomains.*/numberOfSubdomains  8;/' system/decomposeParDict
+fi
+run_cmd "decomposePar -force" "log.decomposePar"
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: decomposePar done"
+else
+    log_msg "${LEVEL_NAME}: decomposePar FAILED"
+    exit 1
+fi
+
+# Step 3: snappyHexMesh
+run_cmd "mpirun -np 8 snappyHexMesh -parallel -overwrite" "log.snappyHexMesh"
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: snappyHexMesh done"
+else
+    log_msg "${LEVEL_NAME}: snappyHexMesh FAILED"
+    exit 1
+fi
+
+# Step 4: reconstructParMesh
+run_cmd "reconstructParMesh -constant" "log.reconstructParMesh"
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: reconstructParMesh done"
+else
+    log_msg "${LEVEL_NAME}: reconstructParMesh FAILED"
+    exit 1
+fi
+
+rm -rf processor*
+rm -f 0/cellLevel 0/pointLevel
+
+# Step 5: checkMesh
+run_cmd "checkMesh" "log.checkMesh"
+NCELLS=$(grep -oP 'cells:\s*\K[0-9]+' log.checkMesh 2>/dev/null | head -1)
+if [ -n "$NCELLS" ]; then
+    log_msg "${LEVEL_NAME}: checkMesh done (${NCELLS} cells)"
+else
+    log_msg "${LEVEL_NAME}: checkMesh done"
+fi
+
+log_msg "${LEVEL_NAME}: meshing completed successfully"

@@ -1,0 +1,7 @@
+>>> Processing level12...
+level12: blockMesh done
+level12: decomposePar done
+level12: snappyHexMesh done
+level12: reconstructParMesh done
+level12: checkMesh done (1224843 cells)
+level12: meshing completed successfully

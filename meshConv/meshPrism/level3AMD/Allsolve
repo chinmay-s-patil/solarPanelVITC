@@ -1,0 +1,101 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+
+LEVEL_NAME=$(basename "$PWD")
+
+# Rotate log.allSolve if present
+if [ -f "log.allSolve" ]; then
+    mv "log.allSolve" "logOld.allSolve"
+fi
+
+LOGFILE="log.allSolve"
+
+# Parse flags
+OVERWRITE=false
+PRINT_MODE=false
+
+for arg in "$@"; do
+    case "$arg" in
+        -overwrite|--overwrite)
+            OVERWRITE=true
+            ;;
+        -print|--print)
+            PRINT_MODE=true
+            ;;
+    esac
+done
+
+log_msg() {
+    local msg="$1"
+    echo "${msg}" >> "$LOGFILE"
+    if [ "$PRINT_MODE" = true ]; then
+        echo "${msg}"
+    fi
+    if [ -n "$TOP_LOGFILE" ] && [ -f "$TOP_LOGFILE" ]; then
+        echo "${msg}" >> "$TOP_LOGFILE"
+    fi
+}
+
+echo ">>> Processing ${LEVEL_NAME}..." > "$LOGFILE"
+if [ -n "$TOP_LOGFILE" ] && [ -f "$TOP_LOGFILE" ]; then
+    echo "" >> "$TOP_LOGFILE"
+    echo ">>> Processing ${LEVEL_NAME}..." >> "$TOP_LOGFILE"
+fi
+
+run_cmd() {
+    local cmd="$1"
+    local logfile="$2"
+    if [ "$PRINT_MODE" = true ]; then
+        eval "$cmd" 2>&1 | tee "$logfile"
+    else
+        eval "$cmd" > "$logfile" 2>&1
+    fi
+    return ${PIPESTATUS[0]}
+}
+
+# Check if mesh exists, run Allmesh if missing
+if [ ! -d "constant/polyMesh" ] || [ ! -f "constant/polyMesh/points" ] || [ ! -s "constant/polyMesh/points" ]; then
+    log_msg "${LEVEL_NAME}: no mesh found, running Allmesh..."
+    if [ -f "./Allmesh" ]; then
+        ./Allmesh "$@"
+    fi
+    if [ ! -d "constant/polyMesh" ] || [ ! -f "constant/polyMesh/points" ]; then
+        log_msg "${LEVEL_NAME}: mesh generation FAILED"
+        exit 1
+    fi
+else
+    log_msg "${LEVEL_NAME}: mesh exists"
+fi
+
+# Step 1: decomposePar
+rm -f 0/cellLevel 0/pointLevel
+if [ -f "system/decomposeParDict" ]; then
+    sed -i 's/numberOfSubdomains.*/numberOfSubdomains  8;/' system/decomposeParDict
+fi
+run_cmd "decomposePar -force" "log.decomposePar"
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: decomposePar done"
+else
+    log_msg "${LEVEL_NAME}: decomposePar FAILED"
+    exit 1
+fi
+
+# Step 2: amdSimpleFoam
+run_cmd "mpirun -np 8 amdSimpleFoam -parallel" "log.amdSimpleFoam"
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: amdSimpleFoam done"
+else
+    log_msg "${LEVEL_NAME}: amdSimpleFoam FAILED"
+    exit 1
+fi
+
+# Step 3: reconstructPar
+run_cmd "reconstructPar -latestTime" "log.reconstructPar"
+if [ $? -eq 0 ]; then
+    log_msg "${LEVEL_NAME}: reconstructPar done"
+else
+    log_msg "${LEVEL_NAME}: reconstructPar FAILED"
+    exit 1
+fi
+
+log_msg "${LEVEL_NAME}: solver completed successfully"

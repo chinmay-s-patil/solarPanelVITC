@@ -1,0 +1,122 @@
+======================================================================
+  Parallel Mesh Generation (level0 to level14)
+======================================================================
+
+>>> Processing level0...
+level0: blockMesh done
+level0: decomposePar done
+level0: snappyHexMesh done
+level0: reconstructParMesh done
+level0: checkMesh done (131541 cells)
+level0: meshing completed successfully
+
+>>> Processing level1...
+level1: blockMesh done
+level1: decomposePar done
+level1: snappyHexMesh done
+level1: reconstructParMesh done
+level1: checkMesh done (158389 cells)
+level1: meshing completed successfully
+
+>>> Processing level2...
+level2: blockMesh done
+level2: decomposePar done
+level2: snappyHexMesh done
+level2: reconstructParMesh done
+level2: checkMesh done (192857 cells)
+level2: meshing completed successfully
+
+>>> Processing level3...
+level3: blockMesh done
+level3: decomposePar done
+level3: snappyHexMesh done
+level3: reconstructParMesh done
+level3: checkMesh done (230907 cells)
+level3: meshing completed successfully
+
+>>> Processing level4...
+level4: blockMesh done
+level4: decomposePar done
+level4: snappyHexMesh done
+level4: reconstructParMesh done
+level4: checkMesh done (271918 cells)
+level4: meshing completed successfully
+
+>>> Processing level5...
+level5: blockMesh done
+level5: decomposePar done
+level5: snappyHexMesh done
+level5: reconstructParMesh done
+level5: checkMesh done (317294 cells)
+level5: meshing completed successfully
+
+>>> Processing level6...
+level6: blockMesh done
+level6: decomposePar done
+level6: snappyHexMesh done
+level6: reconstructParMesh done
+level6: checkMesh done (360000 cells)
+level6: meshing completed successfully
+
+>>> Processing level7...
+level7: blockMesh done
+level7: decomposePar done
+level7: snappyHexMesh done
+level7: reconstructParMesh done
+level7: checkMesh done (407379 cells)
+level7: meshing completed successfully
+
+>>> Processing level8...
+level8: blockMesh done
+level8: decomposePar done
+level8: snappyHexMesh done
+level8: reconstructParMesh done
+level8: checkMesh done (526339 cells)
+level8: meshing completed successfully
+
+>>> Processing level9...
+level9: blockMesh done
+level9: decomposePar done
+level9: snappyHexMesh done
+level9: reconstructParMesh done
+level9: checkMesh done (649990 cells)
+level9: meshing completed successfully
+
+>>> Processing level10...
+level10: blockMesh done
+level10: decomposePar done
+level10: snappyHexMesh done
+level10: reconstructParMesh done
+level10: checkMesh done (786529 cells)
+level10: meshing completed successfully
+
+>>> Processing level11...
+level11: blockMesh done
+level11: decomposePar done
+level11: snappyHexMesh done
+level11: reconstructParMesh done
+level11: checkMesh done (985244 cells)
+level11: meshing completed successfully
+
+>>> Processing level12...
+level12: blockMesh done
+level12: decomposePar done
+level12: snappyHexMesh done
+level12: reconstructParMesh done
+level12: checkMesh done (1224843 cells)
+level12: meshing completed successfully
+
+>>> Processing level13...
+level13: mesh already exists. Skipping.
+
+>>> Processing level14...
+level14: blockMesh done
+level14: decomposePar done
+level14: snappyHexMesh done
+level14: reconstructParMesh done
+level14: checkMesh done (1918582 cells)
+level14: meshing completed successfully
+
+======================================================================
+  All Mesh Convergence Levels Processed!
+======================================================================
